@@ -1,6 +1,8 @@
-package com.bochkov.jpa.repository;
+package com.bochkov.jpa.test;
 
 import com.bochkov.jpa.entity.User;
+import com.bochkov.jpa.repository.UserFilter;
+import com.bochkov.jpa.repository.UserRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -19,12 +21,13 @@ class UserRepositoryTest {
     UserRepository userRepository;
 
 
-
     @Test
     void testValidateUniqueEmail() {
         Exception exception = null;
         try {
-            userRepository.save(User.create().setPhone("1111111111"));
+            User user = User.create(25);
+            user.setEmail("user-1@yandex.ru");
+            userRepository.save(user);
         } catch (Exception e) {
             exception = e;
             logger.debug("error when save user", e);
@@ -36,7 +39,7 @@ class UserRepositoryTest {
     void testValidateWrongEmail() {
         Exception exception = null;
         try {
-            userRepository.save(User.create().setEmail("---"));
+            userRepository.save(User.create(26).setEmail("---"));
         } catch (Exception e) {
             exception = e;
             logger.debug("error when save user", e);
@@ -57,7 +60,7 @@ class UserRepositoryTest {
     }
 
     @Test
-    void testValidateUniquePhone() {
+    void testValidateUniquePhoneFail() {
         Exception exception = null;
         try {
             userRepository.save(User.create().setEmail("a@a.a"));
@@ -69,10 +72,24 @@ class UserRepositoryTest {
     }
 
     @Test
+    void testValidateUniquePhoneSuccess() {
+        Exception exception = null;
+        User user = userRepository.findById(1l).orElse(null);
+        user.setPhone("9098301186");
+        try {
+            userRepository.save(user);
+        } catch (Exception e) {
+            exception = e;
+            logger.debug(e.getMessage());
+        }
+        Assertions.assertNull(exception);
+    }
+
+    @Test
     void testFilterPage() {
         Page<User> page = userRepository.findAll(PageRequest.of(0, 15), new UserFilter().setName("user-1"));
         Assertions.assertTrue(page.getTotalElements() == 11);
-        page = userRepository.findAll(PageRequest.of(0, 15), new UserFilter().setPhone("0000000000"));
+        page = userRepository.findAll(PageRequest.of(0, 15), new UserFilter().setPhone("0000000001"));
         Assertions.assertTrue(page.getTotalElements() == 1);
     }
 

@@ -2,6 +2,8 @@ package com.bochkov.jpa.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.springframework.data.domain.Persistable;
 
 import javax.persistence.*;
@@ -9,6 +11,8 @@ import java.util.Objects;
 
 @MappedSuperclass
 @Getter
+@Setter
+@Accessors(chain = true)
 abstract public class AbstractEntity implements Persistable<Long> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

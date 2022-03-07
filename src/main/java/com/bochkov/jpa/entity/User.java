@@ -11,7 +11,9 @@ import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -35,13 +37,13 @@ public class User extends AbstractEntity {
     @Column(unique = true, nullable = false)
     String email;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    Set<Phone> phones;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
+    List<Phone> phones;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     Profile profile;
 
-    public User(String name, Integer age, String email, Set<Phone> phones, Profile profile) {
+    public User(String name, Integer age, String email, List<Phone> phones, Profile profile) {
         this.name = name;
         this.age = age;
         this.email = email;
@@ -61,48 +63,31 @@ public class User extends AbstractEntity {
         this.email = email;
         this.profile = new Profile(cash, this);
         if (phones != null && phones.length > 0) {
-            this.phones = Arrays.stream(phones).map(Phone::new).map(phone -> phone.setUser(this)).collect(Collectors.toSet());
+            this.phones = Arrays.stream(phones).map(Phone::new).map(phone -> phone.setUser(this)).collect(Collectors.toList());
         }
     }
 
     static public User create() {
-        return create(0);
+        return create(1);
     }
 
-    static public User create(Integer num) {
+    static public User create(Number num) {
         num = num != null ? num : 0;
         String name = num != null ? String.format("user-%s", num) : "user-0";
         BigDecimal cash = BigDecimal.valueOf(new Random().nextInt(10000), 2);
-        return new User(name, 18, name + "@yandex.ru", cash, String.format("%010d", num));
+        User user = new User(name, 18, name + "@yandex.ru", cash, String.format("%010d", num));
+        user.setId(num.longValue());
+        return user;
     }
 
     static public List<User> createUsers(Integer limit) {
-        return IntStream.range(0, limit).mapToObj(num -> create(num)).collect(Collectors.toList());
+        return IntStream.range(1, limit + 1).mapToObj(num -> create((long) num)).collect(Collectors.toList());
     }
 
     @JsonIgnore
     public User setPhone(String... phones) {
-        this.setPhones(Arrays.stream(phones).map(phone -> new Phone(phone, this)).collect(Collectors.toSet()));
+        this.setPhones(Arrays.stream(phones).map(phone -> new Phone(phone, this)).collect(Collectors.toList()));
         return this;
     }
 
-    public User setPhones(Set<Phone> phones) {
-        if (phones != null) {
-            if (this.phones == null) {
-                this.phones = new HashSet<>();
-            } else {
-                this.phones.clear();
-            }
-            this.phones.addAll(phones.stream().map(phone -> phone.setUser(User.this)).collect(Collectors.toSet()));
-
-        }
-        return this;
-    }
-
-    public User setProfile(Profile profile) {
-        this.profile = profile;
-        profile.setUser(this);
-        return this;
-
-    }
 }
