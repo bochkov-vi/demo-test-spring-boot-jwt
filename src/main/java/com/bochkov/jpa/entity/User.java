@@ -11,9 +11,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -37,10 +35,12 @@ public class User extends AbstractEntity {
     @Column(unique = true, nullable = false)
     String email;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     List<Phone> phones;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
+    @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     Profile profile;
 
     public User(String name, Integer age, String email, List<Phone> phones, Profile profile) {
@@ -90,4 +90,34 @@ public class User extends AbstractEntity {
         return this;
     }
 
+    public User setPhones(List<Phone> phones) {
+        if (this.phones != null) {
+            List<Phone> deletedPhones = this.getPhones().stream().filter(phoneEntity -> {
+                boolean exist = Optional.ofNullable(phones).map(putPhones -> putPhones.stream().anyMatch(putPhone -> Objects.equals(putPhone.getPhone(), phoneEntity.getPhone()))).orElse(false);
+                return !exist;
+            }).collect(Collectors.toList());
+
+            this.getPhones().removeAll(deletedPhones);
+
+            if (phones != null) {
+                phones.stream().forEach(putPhone -> {
+                    boolean exist = this.getPhones().stream().anyMatch(phone -> Objects.equals(putPhone.getPhone(), phone.getPhone()));
+                    if (!exist) {
+                        this.getPhones().add(putPhone.setUser(this));
+                    }
+                });
+            }
+        }
+        return this;
+    }
+
+    public User setProfile(Profile profile) {
+        if (this.profile != null) {
+            this.profile.setCash(Optional.ofNullable(profile).map(Profile::getCash).orElse(BigDecimal.ZERO));
+        } else {
+            this.profile = profile;
+            this.profile.setUser(this);
+        }
+        return this;
+    }
 }

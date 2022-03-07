@@ -1,7 +1,5 @@
 package com.bochkov.controler;
 
-import com.bochkov.jpa.entity.Phone;
-import com.bochkov.jpa.entity.Profile;
 import com.bochkov.jpa.entity.User;
 import com.bochkov.jpa.repository.UserFilter;
 import com.bochkov.jpa.repository.UserRepository;
@@ -16,11 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import javax.transaction.Transactional;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @SecurityRequirement(name = "bearerAuth")
@@ -53,30 +46,8 @@ public class UserController {
         return repository.findById(id)
                 .map(entity -> {
                     entity.setEmail(_entity.getEmail()).setName(_entity.getName()).setAge(_entity.getAge());
-                    entity.setProfile(Optional.ofNullable(entity.getProfile())
-                            .map(existingProfile -> {
-                                return existingProfile.setCash(
-                                        Optional.ofNullable(_entity.getProfile()).map(Profile::getCash).orElse(BigDecimal.ZERO));
-                            })
-                            .orElseGet(() -> {
-                                return Optional.ofNullable(_entity.getProfile()).map(putProfile -> putProfile.setUser(entity)).orElse(null);
-                            }));
-
-                    List<Phone> deletedPhones = entity.getPhones().stream().filter(phoneEntity -> {
-                        boolean exist = Optional.ofNullable(_entity.getPhones()).map(putPhones -> putPhones.stream().anyMatch(putPhone -> Objects.equals(putPhone.getPhone(), phoneEntity.getPhone()))).orElse(false);
-                        return !exist;
-                    }).collect(Collectors.toList());
-
-                    entity.getPhones().removeAll(deletedPhones);
-
-                    if (_entity.getPhones() != null) {
-                        _entity.getPhones().stream().forEach(putPhone -> {
-                            boolean exist = entity.getPhones().stream().anyMatch(phone -> Objects.equals(putPhone.getPhone(), phone.getPhone()));
-                            if (!exist) {
-                                entity.getPhones().add(putPhone.setUser(entity));
-                            }
-                        });
-                    }
+                    entity.setProfile(_entity.getProfile());
+                    entity.setPhones(_entity.getPhones());
                     return entity;
                 })
                 .map(entity -> repository.save(entity))

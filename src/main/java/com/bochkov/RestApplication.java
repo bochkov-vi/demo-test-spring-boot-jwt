@@ -3,10 +3,6 @@ package com.bochkov;
 import com.bochkov.jpa.entity.User;
 import com.bochkov.jpa.repository.ProfileRepository;
 import com.bochkov.jpa.repository.UserRepository;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +36,11 @@ public class RestApplication {
 
     @PostConstruct
     public void initUsers() {
-        userRepository.saveAll(User.createUsers(20));
+        User.createUsers(20).forEach(createdUser -> {
+            User user = userRepository.findByName(createdUser.getName()).orElse(createdUser);
+            userRepository.save(user);
+        });
+
     }
 
 

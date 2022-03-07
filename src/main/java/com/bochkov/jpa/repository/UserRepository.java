@@ -8,11 +8,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.QueryHints;
 
+import javax.persistence.QueryHint;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
 import java.util.Optional;
+
+import static org.hibernate.jpa.QueryHints.HINT_CACHEABLE;
 
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     default Page<User> findAll(Pageable pageRequest, UserFilter filter) {
@@ -46,6 +50,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
         }
         return findAll(pageRequest);
     }
-
+    @QueryHints({@QueryHint(name="org.hibernate.cacheable", value="true")})
     Optional<User> findByName(String username);
 }
